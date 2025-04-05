@@ -4,7 +4,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from config.config import TOKEN, ADMIN_ID, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 from database.db_pool import init_db_pool
 from database.db_operations import load_message_store, load_users, load_channels
-from handlers.user_handlers import start, find_movie, help_command
+from handlers.user_handlers import start, find_movie, help_command, change_language
 from handlers.admin_handlers import top_movies, list_users, channels_cmd, admin_commands, broadcast
 from handlers.channel_handlers import handle_channel_post
 from utils.subscription import check_subscription, send_subscription_prompt
@@ -58,8 +58,7 @@ async def main():
     app.bot_data["ADMIN_ID"] = ADMIN_ID
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(
-        CommandHandler("language", lambda update, context: start(update, context)))  # Til o‘zgartirish uchun
+    app.add_handler(CommandHandler("language", change_language))  # Til o‘zgartirish uchun
     app.add_handler(CommandHandler("stat", lambda update, context: None))  # Stat funksiyasi qo‘shilishi kerak
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("top", top_movies))
