@@ -1,11 +1,14 @@
+# handlers/admin_handlers.py
 from telegram import Update
 from telegram.ext import ContextTypes
 from locales.languages import LANGUAGES
 from utils.decorators import admin_only, with_db_connection
 from database.db_operations import save_user
+import json
+import logging
 
+logger = logging.getLogger(__name__)  # Logger qo‘shildi
 
-@admin_only
 @with_db_connection
 async def top_movies(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_lang = context.bot_data["users"].get(update.effective_user.id, {}).get("language", "uz")
@@ -16,7 +19,6 @@ async def top_movies(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_list = "\n".join([f"{i + 1}. {row['name']} - {row['movie_code']} ({row['views']} marta ko‘rilgan)"
                           for i, row in enumerate(rows)])
     await update.message.reply_text(LANGUAGES[user_lang]["top_movies"].format(list=top_list))
-
 
 @admin_only
 @with_db_connection
@@ -31,16 +33,13 @@ async def list_users(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
         for row in rows])
     await update.message.reply_text(LANGUAGES[user_lang]["user_list"].format(list=user_list))
 
-
 @admin_only
 async def channels_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_lang = context.bot_data["users"].get(update.effective_user.id, {}).get("language", "uz")
     if context.bot_data["channels"]:
         channel_list = "\n".join([f"ID: {ch_id} | URL: {ch_url}" for ch_id, ch_url in context.bot_data["channels"]])
-        await update.message.reply_text(LANGUAGES[user_lang]["channel_list"].format(list=channel_list))
+        await update.message.reply_text(f"📡 Mavjud kanallar:\n{channel_list}")
     else:
-        await update.message.reply_text(LANGUAGES[user_lang]["no_channels"])
-
+        await update.message.reply_text("❌ Hozircha kanal mavjud emas.")
 
 @admin_only
 async def admin_commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,7 +57,6 @@ async def admin_commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "ℹ️ /help - Yordam"
     )
     await update.message.reply_text(commands_list)
-
 
 @admin_only
 @with_db_connection
@@ -92,12 +90,10 @@ async def broadcast(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
             failed_users.append(user_id)
     await update.message.reply_text(LANGUAGES[user_lang]["broadcast_result"].format(count=len(failed_users)))
 
-
-# Kanal qo‘shish/o‘chirish
 @admin_only
 @with_db_connection
 async def add_channel(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_lang = users.get(update.effective_user.id, {}).get("language", "uz")
+    user_lang = context.bot_data["users"].get(update.effective_user.id, {}).get("language", "uz")
     if len(context.args) < 2:
         await update.message.reply_text(LANGUAGES[user_lang]["add_channel_usage"])
         return
@@ -114,21 +110,20 @@ async def add_channel(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     channel_username = channel_url.split("https://t.me/")[-1]
-    if any(ch_id == channel_id for ch_id, _ in channels):
+    if any(ch_id == channel_id for ch_id, _ in context.bot_data["channels"]):
         await update.message.reply_text(LANGUAGES[user_lang]["channel_exists"])
     else:
         await conn.execute(
             "INSERT INTO channels (channel_id, channel_username) VALUES ($1, $2)",
             channel_id, channel_username
         )
-        channels.append((channel_id, channel_url))
+        context.bot_data["channels"].append((channel_id, channel_url))
         await update.message.reply_text(LANGUAGES[user_lang]["channel_added"].format(id=channel_id, url=channel_url))
-
 
 @admin_only
 @with_db_connection
 async def remove_channel(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_lang = users.get(update.effective_user.id, {}).get("language", "uz")
+    user_lang = context.bot_data["users"].get(update.effective_user.id, {}).get("language", "uz")
     if not context.args:
         await update.message.reply_text(LANGUAGES[user_lang]["remove_channel_usage"])
         return
@@ -141,7 +136,7 @@ async def remove_channel(conn, update: Update, context: ContextTypes.DEFAULT_TYP
 
     result = await conn.execute("DELETE FROM channels WHERE channel_id = $1", channel_id)
     if result == "DELETE 1":
-        channels[:] = [(ch_id, ch_url) for ch_id, ch_url in channels if ch_id != channel_id]
+        context.bot_data["channels"][:] = [(ch_id, ch_url) for ch_id, ch_url in context.bot_data["channels"] if ch_id != channel_id]
         await update.message.reply_text(LANGUAGES[user_lang]["channel_removed"].format(id=channel_id))
     else:
         await update.message.reply_text(LANGUAGES[user_lang]["channel_not_found"])
