@@ -92,3 +92,11 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(LANGUAGES["uz"]["choose_language"], reply_markup=reply_markup)
+
+
+@with_db_connection
+async def stat(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_lang = users.get(update.effective_user.id, {}).get("language", "uz")
+    users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
+    movies_count = await conn.fetchval("SELECT COUNT(*) FROM message_store")
+    await update.message.reply_text(LANGUAGES[user_lang]["stats"].format(users=users_count, movies=movies_count))

@@ -91,3 +91,57 @@ async def broadcast(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.warning(f"Xabar yuborishda xato {user_id}: {e}")
             failed_users.append(user_id)
     await update.message.reply_text(LANGUAGES[user_lang]["broadcast_result"].format(count=len(failed_users)))
+
+
+# Kanal qo‘shish/o‘chirish
+@admin_only
+@with_db_connection
+async def add_channel(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_lang = users.get(update.effective_user.id, {}).get("language", "uz")
+    if len(context.args) < 2:
+        await update.message.reply_text(LANGUAGES[user_lang]["add_channel_usage"])
+        return
+
+    try:
+        channel_id = int(context.args[0])
+        channel_url = context.args[1]
+    except ValueError:
+        await update.message.reply_text(LANGUAGES[user_lang]["invalid_channel_id"])
+        return
+
+    if not channel_url.startswith("https://t.me/"):
+        await update.message.reply_text(LANGUAGES[user_lang]["invalid_url"])
+        return
+
+    channel_username = channel_url.split("https://t.me/")[-1]
+    if any(ch_id == channel_id for ch_id, _ in channels):
+        await update.message.reply_text(LANGUAGES[user_lang]["channel_exists"])
+    else:
+        await conn.execute(
+            "INSERT INTO channels (channel_id, channel_username) VALUES ($1, $2)",
+            channel_id, channel_username
+        )
+        channels.append((channel_id, channel_url))
+        await update.message.reply_text(LANGUAGES[user_lang]["channel_added"].format(id=channel_id, url=channel_url))
+
+
+@admin_only
+@with_db_connection
+async def remove_channel(conn, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_lang = users.get(update.effective_user.id, {}).get("language", "uz")
+    if not context.args:
+        await update.message.reply_text(LANGUAGES[user_lang]["remove_channel_usage"])
+        return
+
+    try:
+        channel_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text(LANGUAGES[user_lang]["invalid_channel_id"])
+        return
+
+    result = await conn.execute("DELETE FROM channels WHERE channel_id = $1", channel_id)
+    if result == "DELETE 1":
+        channels[:] = [(ch_id, ch_url) for ch_id, ch_url in channels if ch_id != channel_id]
+        await update.message.reply_text(LANGUAGES[user_lang]["channel_removed"].format(id=channel_id))
+    else:
+        await update.message.reply_text(LANGUAGES[user_lang]["channel_not_found"])
