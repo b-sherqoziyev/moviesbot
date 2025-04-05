@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 from locales.languages import LANGUAGES
 from database.db_operations import save_user
 from utils.subscription import check_subscription, send_subscription_prompt
+from utils.decorators import with_db_connection
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
