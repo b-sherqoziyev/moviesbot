@@ -1,0 +1,206 @@
+{
+  "enabled": true,
+  "description": "Telegram Premium/Custom Emojilar konfiguratsiyasi. 'enabled': true bo'lganda custom_emoji_id mavjud bo'lsa <tg-emoji> formatida chiqariladi. Agar Premium muddati tugasa yoki o'chirilsa, tizim avtomatik ravishda 'fallback' standart emojilariga qaytadi.",
+  "emojis": {
+    "movie": {
+      "fallback": "🎬",
+      "custom_emoji_id": null
+    },
+    "popcorn": {
+      "fallback": "🍿",
+      "custom_emoji_id": null
+    },
+    "ticket": {
+      "fallback": "🎟",
+      "custom_emoji_id": null
+    },
+    "search": {
+      "fallback": "🔍",
+      "custom_emoji_id": null
+    },
+    "top_movies": {
+      "fallback": "🏆",
+      "custom_emoji_id": null
+    },
+    "random_movie": {
+      "fallback": "🎲",
+      "custom_emoji_id": null
+    },
+    "views": {
+      "fallback": "👁",
+      "custom_emoji_id": null
+    },
+    "play": {
+      "fallback": "▶️",
+      "custom_emoji_id": null
+    },
+    "download": {
+      "fallback": "📥",
+      "custom_emoji_id": null
+    },
+    "star": {
+      "fallback": "⭐",
+      "custom_emoji_id": null
+    },
+    "channel": {
+      "fallback": "📡",
+      "custom_emoji_id": null
+    },
+    "bell": {
+      "fallback": "🔔",
+      "custom_emoji_id": null
+    },
+    "user": {
+      "fallback": "👤",
+      "custom_emoji_id": "4904848288345228262"
+    },
+    "users": {
+      "fallback": "👥",
+      "custom_emoji_id": null
+    },
+    "admin": {
+      "fallback": "🛠",
+      "custom_emoji_id": null
+    },
+    "settings": {
+      "fallback": "⚙️",
+      "custom_emoji_id": null
+    },
+    "language": {
+      "fallback": "🌐",
+      "custom_emoji_id": "5287292843763713628"
+    },
+    "stats": {
+      "fallback": "📊",
+      "custom_emoji_id": "5431577498364158238"
+    },
+    "broadcast": {
+      "fallback": "📢",
+      "custom_emoji_id": "5285221655914758914"
+    },
+    "help": {
+      "fallback": "ℹ️",
+      "custom_emoji_id": "5818865088970362886"
+    },
+    "check": {
+      "fallback": "✅",
+      "custom_emoji_id": null
+    },
+    "warning": {
+      "fallback": "⚠️",
+      "custom_emoji_id": null
+    },
+    "error": {
+      "fallback": "❌",
+      "custom_emoji_id": null
+    },
+    "cancel": {
+      "fallback": "🚫",
+      "custom_emoji_id": null
+    },
+    "add": {
+      "fallback": "➕",
+      "custom_emoji_id": null
+    },
+    "delete": {
+      "fallback": "🗑",
+      "custom_emoji_id": null
+    },
+    "edit": {
+      "fallback": "✏️",
+      "custom_emoji_id": null
+    },
+    "back": {
+      "fallback": "⬅️",
+      "custom_emoji_id": "5922402280732103377"
+    },
+    "next": {
+      "fallback": "➡️",
+      "custom_emoji_id": null
+    },
+    "link": {
+      "fallback": "🔗",
+      "custom_emoji_id": "5974492756494519709"
+    },
+    "lock": {
+      "fallback": "🔒",
+      "custom_emoji_id": null
+    },
+    "unlock": {
+      "fallback": "🔓",
+      "custom_emoji_id": null
+    },
+    "loading": {
+      "fallback": "⏳",
+      "custom_emoji_id": "5220046725493828505"
+    },
+    "refresh": {
+      "fallback": "🔄",
+      "custom_emoji_id": "6039779802741739617"
+    },
+    "sparkles": {
+      "fallback": "✨",
+      "custom_emoji_id": null
+    },
+    "celebrate": {
+      "fallback": "🎉",
+      "custom_emoji_id": "5193209274452425995"
+    },
+    "flag_uz": {
+      "fallback": "🇺🇿",
+      "custom_emoji_id": "5453875138908938763"
+    },
+    "flag_ru": {
+      "fallback": "🇷🇺",
+      "custom_emoji_id": "5449408995691341691"
+    },
+    "flag_en": {
+      "fallback": "🇬🇧",
+      "custom_emoji_id": "5202021044105257611"
+    },
+    "code": {
+      "fallback": "🔢",
+      "custom_emoji_id": null
+    },
+    "genre": {
+      "fallback": "🎭",
+      "custom_emoji_id": null
+    },
+    "country": {
+      "fallback": "🌍",
+      "custom_emoji_id": null
+    },
+    "speech": {
+      "fallback": "🗣",
+      "custom_emoji_id": "5287292843763713628"
+    },
+    "quality": {
+      "fallback": "🎞",
+      "custom_emoji_id": null
+    },
+    "duration": {
+      "fallback": "⏱",
+      "custom_emoji_id": "5260280853841321805"
+    },
+    "package": {
+      "fallback": "📦",
+      "custom_emoji_id": null
+    },
+    "like": {
+      "fallback": "👍",
+      "custom_emoji_id": null
+    },
+    "dislike": {
+      "fallback": "👎",
+      "custom_emoji_id": null
+    },
+    "favorite": {
+      "fallback": "⭐",
+      "custom_emoji_id": null
+    },
+    "description": {
+      "fallback": "📝",
+      "custom_emoji_id": null
+    }
+  }
+}
