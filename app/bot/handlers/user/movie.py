@@ -28,8 +28,8 @@ async def deliver_movie_message(
     user_lang: str = "uz"
 ) -> None:
     """Kinoni yagona standart formatda foydalanuvchiga yuborish yordamchisi (Multi-Quality & i18n)."""
-    genres = await movie_service.get_movie_genres(movie.id)
-    caption = MovieFormatter.format_caption(movie, genres=genres, lang=user_lang)
+    genres = await movie_service.get_movie_genres(movie.id, lang=user_lang)
+    caption = MovieFormatter.format_user_caption(movie, genres=genres, lang=user_lang)
     bot_info = await bot.get_me()
     media_files = await movie_service.get_movie_media_files(movie.id)
 
@@ -38,7 +38,8 @@ async def deliver_movie_message(
     # Agar bir nechta sifat varianti mavjud bo'lsa -> Sifat tanlash menyusi
     if len(media_files) > 1:
         quality_prompt = i18n.get("select_quality_prompt", user_lang)
-        full_text = f"{caption}\n\n👇 <b>{quality_prompt}</b>"
+        arrow_icon = emoji.get("arrow_down")
+        full_text = f"{caption}\n\n{arrow_icon} <b>{quality_prompt}</b>"
         keyboard = MovieFormatter.get_quality_selection_keyboard(
             movie_id=movie.id,
             media_files=media_files,
@@ -86,57 +87,6 @@ async def deliver_movie_message(
         )
 
 
-@router.message(F.text & ~F.text.startswith("/"))
-async def handle_movie_search(
-    message: Message,
-    bot: Bot,
-    user: User,
-    session: AsyncSession,
-    _: Callable[..., str]
-) -> None:
-    """Foydalanuvchi kino kodi yoki nomini yuborganda kinoni berish yoki qidirish."""
-    query = message.text.strip()
-
-    # 1. Obunani tekshirish (4 bosqichli zanjir)
-    is_sub, not_sub = await subscription_service.check_subscription(bot, user, session)
-    if not is_sub:
-        text = _("subscribe_prompt")
-        reply_markup = get_subscription_keyboard(
-            unsubscribed_channels=not_sub,
-            user_lang=user.language_code,
-            pending_code=query
-        )
-        await message.answer(text=text, reply_markup=reply_markup)
-        return
-
-    movie_service = MovieService(session)
-
-    # 2. Kod bo'yicha qidirish (1ms)
-    movie = await movie_service.get_by_code(query, telegram_id=user.telegram_id)
-    if movie:
-        await deliver_movie_message(bot, message.chat.id, movie, movie_service, user_lang=user.language_code)
-        return
-
-    # 3. Agar kod bo'yicha topilmasa -> Nomi bo'yicha qidirish
-    movies = await movie_service.search_by_title(query, limit=5)
-    if movies:
-        movie_lines = []
-        movie_icon = emoji.get("movie")
-        search_icon = emoji.get("search")
-        for i, m in enumerate(movies, 1):
-            year_info = f" ({m.release_year})" if m.release_year else ""
-            quality_info = f" [{m.quality}]" if m.quality else ""
-            movie_lines.append(
-                f"{i}. {movie_icon} <b>{m.title}</b>{year_info}{quality_info} — {_('movie_label_code')}: <code>{m.code}</code>"
-            )
-        list_text = "\n".join(movie_lines)
-        await message.answer(text=f"{search_icon} <b>Qidiruv:</b>\n\n{list_text}")
-        return
-
-    # 4. Umuman topilmadi
-    await message.answer(text=_("movie_not_found"))
-
-
 @router.callback_query(F.data.startswith("check_sub"))
 async def handle_check_subscription_callback(
     callback: CallbackQuery,
@@ -169,7 +119,7 @@ async def handle_check_subscription_callback(
         return
 
     # Barcha kanallarga a'zo bo'ldi!
-    await callback.answer(text=_("subscribed_success"))
+    await callback.answer(text=f"✅ {_('subscribed_success')}")
     try:
         await callback.message.delete()
     except Exception:
@@ -183,7 +133,12 @@ async def handle_check_subscription_callback(
             await deliver_movie_message(bot, callback.message.chat.id, movie, movie_service, user_lang=user.language_code)
             return
 
-    await callback.message.answer(text=_("subscribed_success"))
+    check_icon = emoji.get("check") or "✅"
+    await callback.message.answer(
+        text=f"{check_icon} <b>{_('subscribed_success')}</b>",
+        parse_mode="HTML"
+    )
+
 
 
 @router.callback_query(F.data.startswith("react:"))
@@ -377,7 +332,18 @@ async def handle_movie_quality_download(
         )
 
 
+from app.bot.filters.i18n import I18nButtonFilter
+
+
+@router.message(I18nButtonFilter("btn_search", emoji_key="search"))
+async def handle_search_button(message: Message, _: Callable[..., str]) -> None:
+    """Qidiruv tugmasi bosilganda yo'riqnomani ko'rsatish."""
+    search_icon = emoji.get("search")
+    await message.answer(f"{search_icon} <b>{_('help_how_to')}</b>\n• {_('help_by_code')}\n• {_('help_by_title')}")
+
+
 @router.message(Command("top"))
+@router.message(I18nButtonFilter("btn_top", emoji_key="top_movies"))
 async def handle_top_movies(
     message: Message,
     bot: Bot,
@@ -406,5 +372,51 @@ async def handle_top_movies(
         lines.append(f"{i}. <a href=\"{link}\">{m.title}</a> — {views_icon} {m.views_count}")
 
     await message.answer("\n".join(lines), parse_mode="HTML", disable_web_page_preview=True)
+
+
+@router.message(F.text & ~F.text.startswith("/"))
+async def handle_movie_search(
+    message: Message,
+    bot: Bot,
+    user: User,
+    session: AsyncSession,
+    _: Callable[..., str]
+) -> None:
+    """Foydalanuvchi kino kodi yoki nomini yuborganda kinoni berish yoki qidirish (Catch-all)."""
+    query = message.text.strip()
+    movie_service = MovieService(session)
+
+    # 1. Kod bo'yicha qidirish (1ms)
+    movie = await movie_service.get_by_code(query, telegram_id=user.telegram_id)
+    if movie:
+        await deliver_movie_message(bot, message.chat.id, movie, movie_service, user_lang=user.language_code)
+        return
+
+    # 2. Agar kod bo'yicha topilmasa -> Nomi bo'yicha qidirish
+    movies = await movie_service.search_by_title(query, limit=5)
+    if movies:
+        movie_lines = []
+        movie_icon = emoji.get("movie")
+        search_icon = emoji.get("search")
+        bot_info = await bot.get_me()
+        bot_username = bot_info.username or "moviesreel_bot"
+        for i, m in enumerate(movies, 1):
+            year_info = f" ({m.release_year})" if m.release_year else ""
+            quality_info = f" [{m.quality}]" if m.quality else ""
+            link = f"https://t.me/{bot_username}?start={m.code}"
+            movie_lines.append(
+                f'{i}. {movie_icon} <a href="{link}">{m.title}</a>{year_info}{quality_info} — {_("movie_label_code")}: <code>{m.code}</code>'
+            )
+        list_text = "\n".join(movie_lines)
+        await message.answer(
+            text=f"{search_icon} <b>{_('search_results_title')}:</b>\n\n{list_text}",
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
+        return
+
+
+    # 3. Umuman topilmadi
+    await message.answer(text=_("movie_not_found"))
 
 

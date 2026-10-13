@@ -340,9 +340,9 @@ class SmartCaptionParser:
         h = height or 0
         w = width or 0
         if h >= 2160 or w >= 3840:
-            return "4k"
+            return "2160p"
         if h >= 1440 or w >= 2560:
-            return "2k"
+            return "1440p"
         if h >= 1080 or w >= 1920:
             return "1080p"
         if h >= 720 or w >= 1280:

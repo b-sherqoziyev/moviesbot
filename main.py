@@ -7,9 +7,11 @@ from app.core.rbac import rbac
 from app.core.emojis import emoji
 from app.core.i18n import i18n
 from app.database.session import async_session_maker, close_db
-from app.bot.loader import bot, dp, redis_client
+from app.bot.loader import bot, dp, redis_client, subscription_service
 from app.bot.middlewares.db_session import DbSessionMiddleware
+from app.bot.middlewares.throttling import ThrottlingMiddleware
 from app.bot.middlewares.i18n import I18nMiddleware
+from app.bot.middlewares.subscription import SubscriptionMiddleware
 from app.bot.handlers import setup_handlers
 
 # Logging sozlamalari
@@ -51,28 +53,46 @@ async def main() -> None:
     # 1. Startup amallari
     await on_startup()
 
-    # 2. Middlewares ni ro'yxatdan o'tkazish
+    # 2. Middlewares ni ro'yxatdan o'tkazish (Outer Middlewares)
+    # Sessiya middleware har bir so'rovga DB sessiyasini ineksiya qiladi
     db_middleware = DbSessionMiddleware()
+    dp.update.outer_middleware(db_middleware)
+
+    # Anti-Flood (Throttling) eng birinchi qatlamda filtrlaydi
+    throttling_middleware = ThrottlingMiddleware(redis_client, limit_seconds=0.6)
+    dp.message.outer_middleware(throttling_middleware)
+    dp.callback_query.outer_middleware(throttling_middleware)
+
+    # I18n middleware xabarlar va tugmalarga user va tilni ineksiya qiladi
     i18n_middleware = I18nMiddleware()
+    dp.message.outer_middleware(i18n_middleware)
+    dp.callback_query.outer_middleware(i18n_middleware)
 
-    # Sessiya middleware har bir so'rovga sessiyani ineksiya qiladi
-    dp.update.middleware(db_middleware)
-
-    # I18n middleware xabarlar va tugmalarga tilni ineksiya qiladi
-    dp.message.middleware(i18n_middleware)
-    dp.callback_query.middleware(i18n_middleware)
+    # Markaziy majburiy a'zolik himoyachisi (Subscription Guard)
+    subscription_guard = SubscriptionMiddleware(subscription_service)
+    dp.message.outer_middleware(subscription_guard)
+    dp.callback_query.outer_middleware(subscription_guard)
 
     # 3. Routerlarni ulash
     main_router = setup_handlers()
     dp.include_router(main_router)
 
-    # 4. Eski o'qilmagan updatelarni tozalash va Pollingni boshlash
+    # 4. RULES.md 7-Qoida: Telegram Update Types ni aniq ko'rsatish
+    allowed_updates = [
+        "message",
+        "callback_query",
+        "channel_post",
+        "chat_member",
+        "chat_join_request"
+    ]
+
+    # 5. Pollingni boshlash
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Bot Telegram Polling rejimida muvaffaqiyatli ishga tushdi!")
         await dp.start_polling(
             bot,
-            allowed_updates=dp.resolve_used_update_types()
+            allowed_updates=allowed_updates
         )
     finally:
         await on_shutdown()

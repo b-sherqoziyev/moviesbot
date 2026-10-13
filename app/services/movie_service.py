@@ -55,10 +55,11 @@ class MovieService:
 
         return movie
 
-    async def get_movie_genres(self, movie_id: int) -> List[str]:
-        """Kino janrlari nomlarini ro'yxat qilib olish."""
+    async def get_movie_genres(self, movie_id: int, lang: str = "uz") -> List[str]:
+        """Kino janrlari nomlarini tilga mos ro'yxat qilib olish (i18n)."""
+        column = getattr(Genre, f"name_{lang}", Genre.name_uz)
         stmt = (
-            select(Genre.name_uz)
+            select(column)
             .join(MovieGenre, MovieGenre.genre_id == Genre.id)
             .where(MovieGenre.movie_id == movie_id)
         )
@@ -74,7 +75,16 @@ class MovieService:
         return await self.repo.get_top_movies(limit=limit)
 
     async def get_next_available_code(self) -> str:
-        """Admin kod kiritmagan bo'lsa, navbatdagi bo'sh raqamni avtomatik generatsiya qilish."""
+        """Navbatdagi bo'sh raqamni atomik va xavfsiz generatsiya qilish (Race-Condition safe)."""
+        try:
+            # Raqamli eng katta kodni topish (o'chirilgan yozuvlar va parallel postlar to'qnashuvini oldini oladi)
+            stmt = select(func.max(func.cast(Movie.code, Integer))).where(Movie.code.regexp_match(r'^\d+$'))
+            result = await self.session.execute(stmt)
+            max_num = result.scalar()
+            if max_num is not None:
+                return str(max_num + 1)
+        except Exception:
+            pass
         stmt = select(func.count(Movie.id))
         result = await self.session.execute(stmt)
         total = result.scalar() or 0

@@ -69,7 +69,26 @@ class I18nService:
 
         return text
 
+    def get_button_variants(self, key: str, emoji_key: str | None = None) -> list[str]:
+        """Tugmaning barcha 3 ta tildagi qiymatlarini olish (Filtrlar uchun dinamik lug'at)."""
+        from app.core.emojis import emoji
+        variants = set()
+        for lang in self.SUPPORTED_LANGUAGES:
+            val = self.get(key, lang=lang)
+            if not val or val.startswith("["):
+                continue
+            cleaned = val.strip().lower()
+            variants.add(cleaned)
+            if emoji_key:
+                with_emoji = emoji.btn(emoji_key, val).strip().lower()
+                variants.add(with_emoji)
+                raw = emoji.raw(emoji_key)
+                if raw:
+                    variants.add(f"{raw} {val}".strip().lower())
+        return list(variants)
+
 
 # Singleton nusxa va qulay alias
 i18n = I18nService()
 _ = i18n.get
+

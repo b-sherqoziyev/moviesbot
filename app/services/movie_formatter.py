@@ -41,6 +41,99 @@ class MovieFormatter:
         return f"{s} {units[i]}"
 
     @classmethod
+    def format_quality(cls, quality: Optional[str]) -> Optional[str]:
+        """Sifatni aniq piksellar (480p, 720p, 1080p) formatiga o'tkazish.
+        HD -> 720p, FHD -> 1080p, 4K -> 2160p va h.k.
+        """
+        if not quality:
+            return None
+        q = str(quality).strip().lower()
+        mapping = {
+            "hd": "720p",
+            "fhd": "1080p",
+            "fullhd": "1080p",
+            "full hd": "1080p",
+            "4k": "2160p",
+            "uhd": "2160p",
+            "2k": "1440p",
+            "qhd": "1440p",
+            "sd": "480p",
+            "360": "360p",
+            "480": "480p",
+            "720": "720p",
+            "1080": "1080p",
+            "1440": "1440p",
+            "2160": "2160p",
+        }
+        if q in mapping:
+            return mapping[q]
+        if q.endswith("p") and q[:-1].isdigit():
+            return q
+        if q.isdigit():
+            return f"{q}p"
+        return quality.upper()
+
+    @classmethod
+    def format_user_caption(
+        cls,
+        movie: Movie,
+        genres: Optional[List[str]] = None,
+        lang: str = "uz"
+    ) -> str:
+        """Foydalanuvchi kinoni so'raganda ko'rsatiladigan toza va ixcham caption.
+        Faqat mavjud bo'lsa:
+        1. Kino nomi (va yili)
+        2. Tili
+        3. Sifati (aniq 480p, 720p, 1080p ko'rinishida)
+        4. Davlati
+        5. Janri
+        6. Ko'rishlar soni
+        """
+        lines = []
+
+        # 1. Kino nomi (+ yili)
+        movie_icon = emoji.get("movie")
+        header = f"{movie_icon} <b>{movie.title}</b>"
+        if movie.release_year:
+            header += f" ({movie.release_year})"
+        lines.append(header)
+        lines.append("━━━━━━━━━━━━━━━━━━━━")
+
+        # 2. Tili (sifat ustida, agar bor bo'lsa)
+        if movie.language:
+            lang_icon = emoji.get("language")
+            lbl_language = i18n.get("movie_label_language", lang)
+            lines.append(f"{lang_icon} <b>{lbl_language}:</b> {movie.language}")
+
+        # 3. Sifati (HD/4K emas, aniq 480p, 720p va h.k.)
+        clean_quality = cls.format_quality(movie.quality)
+        if clean_quality:
+            quality_icon = emoji.get("quality")
+            lbl_quality = i18n.get("movie_label_quality", lang)
+            lines.append(f"{quality_icon} <b>{lbl_quality}:</b> {clean_quality}")
+
+        # 4. Davlati (agar bor bo'lsa)
+        if movie.country:
+            country_icon = emoji.get("country")
+            lbl_country = i18n.get("movie_label_country", lang)
+            lines.append(f"{country_icon} <b>{lbl_country}:</b> {movie.country}")
+
+        # 5. Janri (agar bor bo'lsa)
+        if genres:
+            genre_icon = emoji.get("genre")
+            lbl_genre = i18n.get("movie_label_genre", lang)
+            lines.append(f"{genre_icon} <b>{lbl_genre}:</b> {', '.join(genres)}")
+
+        # 6. Ko'rishlar soni (agar bor bo'lsa)
+        if movie.views_count > 0:
+            views_icon = emoji.get("views")
+            lbl_views = i18n.get("movie_label_views", lang)
+            lbl_times = i18n.get("movie_label_times", lang)
+            lines.append(f"{views_icon} <b>{lbl_views}:</b> {movie.views_count} {lbl_times}")
+
+        return "\n".join(lines)
+
+    @classmethod
     def format_caption(
         cls,
         movie: Movie,
@@ -48,7 +141,7 @@ class MovieFormatter:
         genres: Optional[List[str]] = None,
         lang: str = "uz"
     ) -> str:
-        """Kino obyektidan barcha mavjud maydonlarni olib, dinamik emojilar va ko'p tilli qolip yasash."""
+        """Kino obyektidan barcha mavjud maydonlarni olib, to'liq ma'lumot qolipini yasash (Admin uchun)."""
         lines = []
 
         # 1. Sarlavha: {movie_emoji} Betmen (2008)
@@ -89,10 +182,11 @@ class MovieFormatter:
             lines.append(f"{star_icon} <b>{lbl_rating}:</b> {movie.rating}")
 
         # 7. Sifati
-        if movie.quality:
+        clean_quality = cls.format_quality(movie.quality)
+        if clean_quality:
             quality_icon = emoji.get("quality")
             lbl_quality = i18n.get("movie_label_quality", lang)
-            lines.append(f"{quality_icon} <b>{lbl_quality}:</b> {movie.quality.upper()}")
+            lines.append(f"{quality_icon} <b>{lbl_quality}:</b> {clean_quality}")
 
         # 8. Davomiyligi (Telegramdan olingan)
         duration_str = cls.format_duration(movie.duration)

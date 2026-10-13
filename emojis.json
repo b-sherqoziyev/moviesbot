@@ -46,6 +46,10 @@
       "fallback": "📡",
       "custom_emoji_id": null
     },
+    "speaker": {
+      "fallback": "🔈",
+      "custom_emoji_id": null
+    },
     "bell": {
       "fallback": "🔔",
       "custom_emoji_id": null
@@ -160,11 +164,11 @@
     },
     "code": {
       "fallback": "🔢",
-      "custom_emoji_id": null
+      "custom_emoji_id": "5343673308955042746"
     },
     "genre": {
       "fallback": "🎭",
-      "custom_emoji_id": null
+      "custom_emoji_id": "6158767881652800058"
     },
     "country": {
       "fallback": "🌍",
@@ -200,6 +204,14 @@
     },
     "description": {
       "fallback": "📝",
+      "custom_emoji_id": null
+    },
+    "calendar": {
+      "fallback": "📅",
+      "custom_emoji_id": null
+    },
+    "arrow_down": {
+      "fallback": "👇",
       "custom_emoji_id": null
     }
   }

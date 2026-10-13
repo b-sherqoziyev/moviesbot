@@ -21,6 +21,16 @@ class ChannelRepository(BaseRepository[Channel]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_all_channels(self) -> List[Channel]:
+        """Barcha kanallarni (faol va nofaol) ro'yxatini olish."""
+        stmt = (
+            select(Channel)
+            .order_by(Channel.priority.desc(), Channel.id.asc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+
     async def get_by_channel_id(self, channel_id: int) -> Optional[Channel]:
         """Kanal ID si bo'yicha qidirish."""
         stmt = select(Channel).where(Channel.channel_id == channel_id)
